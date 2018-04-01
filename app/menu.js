@@ -13,13 +13,9 @@ export default class MenuBuilder {
       this.setupDevelopmentEnvironment();
     }
 
-    let template;
-
-    if (process.platform === 'darwin') {
-      template = this.buildDarwinTemplate();
-    } else {
-      template = this.buildDefaultTemplate();
-    }
+    const template = process.platform === 'darwin'
+      ? this.buildDarwinTemplate()
+      : this.buildDefaultTemplate();
 
     const menu = Menu.buildFromTemplate(template);
     Menu.setApplicationMenu(menu);
@@ -120,8 +116,10 @@ export default class MenuBuilder {
     const templateDefault = [{
       label: '&File',
       submenu: [{
-        label: '&Open',
-        accelerator: 'Ctrl+O'
+        label: '&ANA path',
+        click:()=>{
+            this.mainWindow.webContents.send('ana-path');
+        }
       }, {
         label: '&Close',
         accelerator: 'Ctrl+W',
