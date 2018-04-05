@@ -76,7 +76,7 @@ const steps = [
       '<ul >' +
       '<li style="list-style:circle">Choose where ANA executable is located</li>' +
       '<li style="list-style:circle">Each analysis has its own file requirements</li>' +
-      '<li style="list-style:circle">Save your configuration for next time</li>' +
+      '<li style="list-style:circle">Save your configuration for the next time</li>' +
       '</ul>',
     selector: '#present',
     position: 'top',
@@ -95,8 +95,7 @@ const steps = [
         outer: '#000'
       }
     }
-  }
-];
+  }];
 
 const keaOptions = {
   connect: {
@@ -246,11 +245,11 @@ class Home extends Component<Props> {
     const pdbFilename =
       this.props.configurationForm.pdb_file_upload == undefined
         ? ''
-        : this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
+        : this.props.configurationForm.pdb_file_upload;
     const configFilename =
       this.props.configurationForm.config_file_upload == undefined
         ? ''
-        : this.props.configurationForm.config_file_upload.replace(/^.*[\\\/]/, '');
+        : this.props.configurationForm.config_file_upload;
     const { classes, fullScreen } = this.props;
     return (
       <Grid container className={classes.root}>
@@ -266,7 +265,7 @@ class Home extends Component<Props> {
                 }}
                 message={
                   <span id="message-id">
-                    Your ANA path is missing - GUI will not be able to run your dynamic
+                    Your ANA path is missing - ANAGUI will not be able to run your dynamic
                   </span>
                 }
                 action={
@@ -547,7 +546,7 @@ class Home extends Component<Props> {
                   <Typography align="center" variant="headline">
                     Included Area
                   </Typography>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="Amino acids that delimit the convex hull of the included area.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -569,7 +568,7 @@ class Home extends Component<Props> {
               </Grid>
               <Grid container alignItems="baseline">
                 <Grid item xs={9}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="Atoms that delimit the convex hull of the included area.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -589,7 +588,7 @@ class Home extends Component<Props> {
                   />
                 </Grid>
                 <Grid item xs={3}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="0: keep all cells that intercede in the included area ; 1: only keep null areas that are within the included area.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -616,7 +615,7 @@ class Home extends Component<Props> {
                 </Grid>
 
                 <Grid item xs={4}>
-                  <Tooltip title="NONE: don't discard; cm: determine cells surroundings using the global CM as reference;  backbone: draw a convex hull between the Calphas and discard every cell with its centroid outside(inside) the hull;  axes: determine cells surroundings using its centroid and cartesian axes as references. Default value: cm.">
+                  <Tooltip title="none: don't discard ; cm: determine cells surroundings using the global CM as reference ; backbone: draw a convex hull between the Calphas and discard every cell with its centroid outside(inside) the hull ; axes: determine cells surroundings using its centroid and cartesian axes as references. Default value: cm.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -625,8 +624,8 @@ class Home extends Component<Props> {
                     </i>
                   </Tooltip>
                   <SelectComponent
-                    helperText=""
-                    label="ASA_discard_methodOptions"
+                    helperText="string"
+                    label="ASA_discard_method"
                     handleChange={this.handleChange}
                     data={ASA_discard_methodOptions}
                     defaultValue="cm"
@@ -634,7 +633,7 @@ class Home extends Component<Props> {
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="inside: keep inside nulls ; outside: keep outside nulls">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -643,15 +642,16 @@ class Home extends Component<Props> {
                     </i>
                   </Tooltip>
                   <SelectComponent
-                    helperText=""
                     label="ASA_only_side"
+                    helperText="string"
                     handleChange={this.handleChange}
                     data={ASA_only_sideOptions}
+                    defaultValue="inside"
                     model="configuration.ASA_only_side"
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="Don't use these to discard ASA cells.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -664,7 +664,7 @@ class Home extends Component<Props> {
                     model="configuration.ASA_exclude_residues"
                     id="ASA_exclude_residues"
                     label="ASA_exclude_residues"
-                    helperText="Don't use these to discard ASA cells."
+                    helperText="residues indices"
                     className={classes.textField}
                     margin="normal"
                     defaultValue="none"
@@ -684,14 +684,14 @@ class Home extends Component<Props> {
                     model="configuration.ASA_min_dot_pdt"
                     id="ASA_min_dot_pdt"
                     label="ASA_min_dot_pdt"
-                    helperText="integer"
+                    helperText="float"
                     defaultValue="0.7"
                     className={classes.textField}
                     margin="normal"
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="Maximum distance between cell and Calpha used to keep cell. The bigger this number is the better (but slower) the process gets.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -718,7 +718,7 @@ class Home extends Component<Props> {
                   </Typography>
                 </Grid>
                 <Grid item xs={4}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="none: don't group null areas; facets: group null areas if the tetrahedrons share facets ; boxes: group null areas if the tetrahedrons bounding boxes intersect.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -730,6 +730,7 @@ class Home extends Component<Props> {
                     helperText=""
                     autoWidth
                     label="clusters_method"
+                    helperText="string"
                     handleChange={this.handleChange}
                     data={clusters_methodOptions}
                     defaultValue="boxes"
@@ -737,7 +738,7 @@ class Home extends Component<Props> {
                   />
                 </Grid>
                 <Grid item xs={4}>
-                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                  <Tooltip title="Minimum number of cells a cluster has to have to be included.">
                     <i
                       style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
                       className="material-icons"
@@ -747,10 +748,10 @@ class Home extends Component<Props> {
                   </Tooltip>
                   <Control.text
                     component={TextField}
-                    model="configuration.cluster_min_size"
-                    id="cluster_min_size"
-                    label="cluster_min_size"
-                    helperText="Integer"
+                    model="configuration.clusters_min_size"
+                    id="clusters_min_size"
+                    label="clusters_min_size"
+                    helperText="integer"
                     className={classes.textField}
                     margin="normal"
                     defaultValue="2"
@@ -778,7 +779,8 @@ class Home extends Component<Props> {
                     model="configuration.included_area_residues"
                     id="included_area_residues"
                     label="included_area_residues"
-                    helperText="Comma separated values"
+                    defaultValue="none"
+                    helperText="space separated values"
                     className={classes.textField}
                     margin="normal"
                   />
@@ -800,7 +802,8 @@ class Home extends Component<Props> {
                     model="configuration.included_area_atoms"
                     id="included_area_atoms"
                     label="included_area_atoms"
-                    helperText="Comma separated values"
+                    defaultValue="none"
+                    helperText="space separated values"
                     className={classes.textField}
                     margin="normal"
                   />
@@ -817,6 +820,7 @@ class Home extends Component<Props> {
                   <SelectComponent
                     className={classes.formControl}
                     label="Area Precision"
+                    defaultValue="0"
                     handleChange={this.handleChange}
                     data={included_area_precisionOptions}
                     helperText="Method"
@@ -967,23 +971,19 @@ const output_typeOptions = [
 ];
 const clusters_methodOptions = [
   {
-    text: 'None',
-    value: 'none'
+    text: 'boxes',
+    value: 'boxes'
   },
   {
-    text: 'Facets',
+    text: 'facets',
     value: 'facets'
   },
   {
-    text: 'Boxes',
-    value: 'boxes'
+    text: 'none',
+    value: 'none'
   }
 ];
 const included_area_precisionOptions = [
-  {
-    text: 'None',
-    value: 'none'
-  },
   {
     value: '0',
     text: '0'
@@ -996,37 +996,37 @@ const included_area_precisionOptions = [
 const ASA_discard_methodOptions = [
   {
     value: 'cm',
-    text: 'CM'
-  },
-  {
-    text: 'None',
-    value: 'none'
+    text: 'cm'
   },
   {
     value: 'backbone',
-    text: 'Backbone'
+    text: 'backbone'
   },
   {
     value: 'axes',
-    text: 'Axes'
+    text: 'axes'
+  },
+  {
+    text: 'none',
+    value: 'none'
   }
 ];
 const ASA_only_sideOptions = [
   {
-    text: 'Outside',
+    value: 'inside',
+    text: 'inside'
+  },
+  {
+    text: 'outside',
     value: 'outside'
   },
   {
-    value: 'inside',
-    text: 'Inside'
-  },
-  {
     value: 'backbone',
-    text: 'Backbone'
+    text: 'backbone'
   },
   {
     value: 'axes',
-    text: 'Axes'
+    text: 'axes'
   }
 ];
 export default kea(keaOptions)(withStyles(styles)(Home));
