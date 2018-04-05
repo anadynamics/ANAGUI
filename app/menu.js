@@ -126,7 +126,12 @@ export default class MenuBuilder {
         click: () => {
           this.mainWindow.close();
         }
-      }]
+    },{
+      label: '&Delete Cache',
+      click: () => {
+        this.mainWindow.webContents.send('clearCache');
+      }
+    }]
     }, {
       label: '&View',
       submenu: (process.env.NODE_ENV === 'development') ? [{

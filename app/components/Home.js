@@ -126,10 +126,15 @@ class Home extends Component<Props> {
       console.log('ana Path click');
       this.showFileDialog('configuration.ana_path', ['*'], 'Any File');
     });
+    ipcRenderer.on('clearCache', event => {
+      // store.dispatch({ type: 'OPEN_FILE' });
+      console.log('Clear Cache');
+      eStore.clear();
+    });
   };
   checkValidAnaPath = () => {
     const currentAnaPath = eStore.get('configuration.ana_path');
-    // eStore.clear()
+
     if (currentAnaPath != undefined) {
       if (fs.existsSync(currentAnaPath)) {
         console.log('ANA File Existis', currentAnaPath);
