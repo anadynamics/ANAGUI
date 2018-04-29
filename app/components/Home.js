@@ -97,7 +97,8 @@ const steps = [
     }
   }
 ];
-
+// Static y Molecular Output PDB
+// Add SAVE CONFIG abajo en el form Elige archivo y guarda
 const keaOptions = {
   connect: {
     // actions: [keaFormComponent, ["setValue", "submit"]],
@@ -112,6 +113,7 @@ class Home extends Component<Props> {
       currentTab: 0,
       dialogOpen: false,
       snackbarOpen: false,
+      ana_execute_results: null,
       anaConfigStatus: {
         location: false
       }
@@ -139,6 +141,7 @@ class Home extends Component<Props> {
       if (fs.existsSync(currentAnaPath)) {
         console.log('ANA File Existis', currentAnaPath);
         this.setState({ anaConfigStatus: { location: true } });
+        this.props.dispatch(actions.change('configuration.ana_path', currentAnaPath));
       } else {
         console.log('ANA File Missing, Reset', currentAnaPath);
         eStore.delete('configuration.ana_path');
@@ -174,24 +177,41 @@ class Home extends Component<Props> {
     this.showFileDialog('configuration.ana_path', ['*'], 'Any File');
   };
 
-  handleSubmit = (event, model) => {
-    const { dispatch } = this.props;
-
-    console.log(model);
-    dispatch(actions.merge('configuration', { included_area_residues: '123', included_area_atoms: '321' }));
-  };
   executeANA = () => {
     const child = require('child_process').execFile;
     const executablePath = this.props.configurationForm.ana_path;
-    const parameters = [this.props.configurationForm.pdb_file_upload];
-    const logA = (err, data) => {
+
+    let dirname = this.props.configurationForm.pdb_file_upload.match(/(.*)[\/\\]/)[1]||'';
+    let pdbFilename = this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
+    let outputFilename= dirname+ '/'+pdbFilename+'.txt';
+    const processExecResults = (err, stdout, stderr) => {
       console.log(err);
-      console.log(data.toString());
-      this.props.dispatch(actions.change('configuration.ana_execute_results', data.toString()));
+      console.log(stdout.toString());
+      console.log(stderr);
+      this.setState({ ana_execute_results: stdout.toString() });
       this.handleDialogOpen();
     };
-    child(executablePath, parameters, (err, data) => {
-      logA(err, data);
+    const parameters = [
+      this.props.configurationForm.pdb_file_upload,
+      `-c ${this.props.configurationForm.config_file_upload }`
+    ];
+
+    //FIRST SAVE THE CURRENT CONFIG
+    this.saveConfigToFile();
+    if (this.state.currentTab == 0) {
+      // Static
+      parameters.push(' -o ' + outputFilename);
+    } else if (this.state.currentTab == 1) {
+      // MD
+    } else if (this.state.currentTab == 1) {
+      // MD
+    } else {
+      console.error("Current TAB not defined, I don't know what to run");
+      return false;
+    }
+
+    child(executablePath, parameters, {'cwd': dirname, 'shell':true}, (err, data) => {
+      processExecResults(err, data);
     });
   };
   showFileDialog = (modelName, extensions, extensionsTitle) => {
@@ -203,9 +223,21 @@ class Home extends Component<Props> {
     });
     if (value != undefined) {
       eStore.set(modelName, value[0]);
-      this.checkValidAnaPath();
+      this.checkValidAnaPath(); // TODO: only call this method once
       this.props.dispatch(actions.change(modelName, value[0]));
+      if (modelName == 'configuration.config_file_upload') {
+        // We need to read the config file and parse it
+        const config = ini.parse(fs.readFileSync(value[0], 'utf-8'));
+        console.log('Reading new config!', config);
+        this.props.dispatch(actions.merge('configuration', config));
+      }
     }
+  };
+  saveConfigToFile = () => {
+    fs.writeFileSync(
+      `${this.props.configurationForm.pdbFilename}.cfg`,
+      ini.stringify(this.props.configurationForm)
+    );
   };
   handleTabChange = (event, currentTab) => {
     this.setState({ currentTab });
@@ -246,11 +278,11 @@ class Home extends Component<Props> {
     const pdbFilename =
       this.props.configurationForm.pdb_file_upload == undefined
         ? ''
-        : this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
+        : this.props.configurationForm.pdb_file_upload; // Add this function to show only the file name  .replace(/^.*[\\\/]/, '');
     const configFilename =
       this.props.configurationForm.config_file_upload == undefined
         ? ''
-        : this.props.configurationForm.config_file_upload.replace(/^.*[\\\/]/, '');
+        : this.props.configurationForm.config_file_upload;
     const { classes, fullScreen } = this.props;
     return (
       <Grid container className={classes.root}>
@@ -358,7 +390,7 @@ class Home extends Component<Props> {
                     </Button>
                   </Grid>
                   {this.state.currentTab == 1 ? (
-                    <Grid item xs={4}>
+                    <Grid item xs={3}>
                       <Button
                         color="default"
                         variant="flat"
@@ -399,90 +431,87 @@ class Home extends Component<Props> {
                     ''
                   )}
                   {this.state.currentTab == 2 ? (
-                      <Grid item xs={2}>
-                        <Button
-                          color="default"
-                          variant="flat"
-                          id="raised-button-file"
-                          component="span"
-                          onClick={() =>
-                            this.showFileDialog(
-                              'configuration.ndd_input_file_upload',
-                              ['*'],
-                              'Any File'
-                            )
-                          }
-                          className={classes.button}
-                        >
-                          {this.props.configurationForm.ndd_input_file_upload == undefined ? (
-                            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                              <i className="material-icons" style={{ paddingRight: 10 }}>
-                                file_upload
-                              </i>NDD Input
-                            </div>
-                          ) : (
-                            <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                              <i className="material-icons" style={{ paddingRight: 10 }}>
-                                file_upload
-                              </i>
-                              <span>NDD Input</span>
-                              <i
-                                className="material-icons"
-                                style={{ color: '#52a647', paddingLeft: 10 }}
-                              >
-                                check
-                              </i>
-                            </div>
-                          )}
-                        </Button>
-                      </Grid>
-
+                    <Grid item xs={2}>
+                      <Button
+                        color="default"
+                        variant="flat"
+                        id="raised-button-file"
+                        component="span"
+                        onClick={() =>
+                          this.showFileDialog(
+                            'configuration.ndd_input_file_upload',
+                            ['*'],
+                            'Any File'
+                          )
+                        }
+                        className={classes.button}
+                      >
+                        {this.props.configurationForm.ndd_input_file_upload == undefined ? (
+                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            <i className="material-icons" style={{ paddingRight: 10 }}>
+                              file_upload
+                            </i>NDD Input
+                          </div>
+                        ) : (
+                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            <i className="material-icons" style={{ paddingRight: 10 }}>
+                              file_upload
+                            </i>
+                            <span>NDD Input</span>
+                            <i
+                              className="material-icons"
+                              style={{ color: '#52a647', paddingLeft: 10 }}
+                            >
+                              check
+                            </i>
+                          </div>
+                        )}
+                      </Button>
+                    </Grid>
                   ) : (
                     ''
                   )}
                   {this.state.currentTab == 2 ? (
-
-                      <Grid item xs={2}>
-                          <Button
-                            color="default"
-                            variant="flat"
-                            id="raised-button-file"
-                            component="span"
-                            onClick={() =>
-                              this.showFileDialog(
-                                'configuration.ndd_output_file_upload',
-                                ['*'],
-                                'Any File'
-                              )
-                            }
-                            className={classes.button}
-                          >
-                            {this.props.configurationForm.ndd_output_file_upload == undefined ? (
-                              <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                <i className="material-icons" style={{ paddingRight: 10 }}>
-                                  file_upload
-                              </i>NDD Output
-                              </div>
-                            ) : (
-                              <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                                <i className="material-icons" style={{ paddingRight: 10 }}>
-                                  file_upload
-                                </i>
-                                <span>NDD Output</span>
-                                <i
-                                  className="material-icons"
-                                  style={{ color: '#52a647', paddingLeft: 10 }}
-                                >
-                                  check
-                                </i>
-                              </div>
-                            )}
-                          </Button>
-                      </Grid>
+                    <Grid item xs={2}>
+                      <Button
+                        color="default"
+                        variant="flat"
+                        id="raised-button-file"
+                        component="span"
+                        onClick={() =>
+                          this.showFileDialog('configuration.ndd_output_file', ['*'], 'Any File')
+                        }
+                        className={classes.button}
+                      >
+                        {this.props.configurationForm.ndd_output_file == undefined ? (
+                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            <i className="material-icons" style={{ paddingRight: 10 }}>
+                              save
+                            </i>NDD Output
+                          </div>
+                        ) : (
+                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            <i className="material-icons" style={{ paddingRight: 10 }}>
+                              save
+                            </i>
+                            <span>NDD Output</span>
+                            <i
+                              className="material-icons"
+                              style={{ color: '#52a647', paddingLeft: 10 }}
+                            >
+                              check
+                            </i>
+                          </div>
+                        )}
+                      </Button>
+                    </Grid>
                   ) : (
                     ''
                   )}
-                  <Grid item xs={this.state.currentTab == 2 ? 2 : this.state.currentTab == 1 ? 2:6}>
+                  <Grid
+                    item
+                    xs={this.state.currentTab == 2 ? 2 : this.state.currentTab == 1 ? 2 : 6}
+                  >
                     <Grid container justify="flex-end">
                       <Button
                         variant="raised"
@@ -826,72 +855,74 @@ class Home extends Component<Props> {
                 </Grid>
               </Grid>
             </TabContainer>
-            <TabContainer><Grid container alignItems="baseline">
-              <Grid item xs={12}>
-                <Typography align="center" variant="headline">
-                  Included Area
-                </Typography>
-                <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
-                  <i
-                    style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
-                    className="material-icons"
-                  >
-                    help_outline
-                  </i>
-                </Tooltip>
-                <Control.text
-                  style={{ minWidth: '90%' }}
-                  component={TextField}
-                  model="configuration.included_area_residues"
-                  id="included_area_residues"
-                  label="included_area_residues"
-                  helperText="Comma separated values"
-                  className={classes.textField}
-                  margin="normal"
-                />
+            <TabContainer>
+              <Grid container alignItems="baseline">
+                <Grid item xs={12}>
+                  <Typography align="center" variant="headline">
+                    Included Area
+                  </Typography>
+                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                    <i
+                      style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
+                      className="material-icons"
+                    >
+                      help_outline
+                    </i>
+                  </Tooltip>
+                  <Control.text
+                    style={{ minWidth: '90%' }}
+                    component={TextField}
+                    model="configuration.included_area_residues"
+                    id="included_area_residues"
+                    label="included_area_residues"
+                    helperText="Comma separated values"
+                    className={classes.textField}
+                    margin="normal"
+                  />
+                </Grid>
               </Grid>
-            </Grid>
-            <Grid container alignItems="baseline">
-              <Grid item xs={9}>
-                <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
-                  <i
-                    style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
-                    className="material-icons"
-                  >
-                    help_outline
-                  </i>
-                </Tooltip>
-                <Control.text
-                  style={{ minWidth: '90%' }}
-                  component={TextField}
-                  model="configuration.included_area_atoms"
-                  id="included_area_atoms"
-                  label="included_area_atoms"
-                  helperText="Comma separated values"
-                  className={classes.textField}
-                  margin="normal"
-                />
+              <Grid container alignItems="baseline">
+                <Grid item xs={9}>
+                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                    <i
+                      style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
+                      className="material-icons"
+                    >
+                      help_outline
+                    </i>
+                  </Tooltip>
+                  <Control.text
+                    style={{ minWidth: '90%' }}
+                    component={TextField}
+                    model="configuration.included_area_atoms"
+                    id="included_area_atoms"
+                    label="included_area_atoms"
+                    helperText="Comma separated values"
+                    className={classes.textField}
+                    margin="normal"
+                  />
+                </Grid>
+                <Grid item xs={3}>
+                  <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
+                    <i
+                      style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
+                      className="material-icons"
+                    >
+                      help_outline
+                    </i>
+                  </Tooltip>
+                  <SelectComponent
+                    className={classes.formControl}
+                    label="Area Precision"
+                    handleChange={this.handleChange}
+                    data={included_area_precisionOptions}
+                    helperText="Method"
+                    autoWidth
+                    model="configuration.included_area_precision"
+                  />
+                </Grid>
               </Grid>
-              <Grid item xs={3}>
-                <Tooltip title="inside: keep inside nulls || outside: keep outside nulls">
-                  <i
-                    style={{ fontSize: '12px', color: 'grey', marginRight: '5px' }}
-                    className="material-icons"
-                  >
-                    help_outline
-                  </i>
-                </Tooltip>
-                <SelectComponent
-                  className={classes.formControl}
-                  label="Area Precision"
-                  handleChange={this.handleChange}
-                  data={included_area_precisionOptions}
-                  helperText="Method"
-                  autoWidth
-                  model="configuration.included_area_precision"
-                />
-              </Grid>
-            </Grid></TabContainer>
+            </TabContainer>
           </SwipeableViews>
         </Grid>
         <Dialog
@@ -902,9 +933,14 @@ class Home extends Component<Props> {
         >
           <DialogTitle id="responsive-dialog-title">Execution Results</DialogTitle>
           <DialogContent>
-            <DialogContentText>
-              {this.props.configurationForm.ana_execute_results}
-            </DialogContentText>
+              <DialogContentText>
+                 <Typography variant="body2" gutterBottom style={{ 'fontFamily': 'monospace', 'fontSize': '13px'  }}>
+                     {this.state.ana_execute_results}
+                 </Typography>
+                 <Typography variant="body2" gutterBottom style={{ 'fontStyle': 'italic', 'fontSize': '11px', 'marginTop': '30px'  }}>
+                     ANA output was written to: {pdbFilename}.txt
+                 </Typography>
+              </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={this.handleDialogClose} color="primary">
