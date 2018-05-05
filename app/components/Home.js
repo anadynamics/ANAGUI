@@ -234,9 +234,13 @@ class Home extends Component<Props> {
     }
   };
   saveConfigToFile = () => {
+      var configurationFormClone = Object.assign({}, this.props.configurationForm);
+      delete configurationFormClone.config_file_upload;
+      delete configurationFormClone.ana_path;
+      delete configurationFormClone.pdb_file_upload;
     fs.writeFileSync(
-      `${this.props.configurationForm.pdbFilename}.cfg`,
-      ini.stringify(this.props.configurationForm)
+      `${this.props.configurationForm.pdb_file_upload}.cfg`,
+      ini.stringify(configurationFormClone)
     );
   };
   handleTabChange = (event, currentTab) => {
