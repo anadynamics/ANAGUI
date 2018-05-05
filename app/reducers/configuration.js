@@ -1,4 +1,1 @@
-export const initialConfigurationState = {
-  firstName: '',
-  lastName: ''
-};
+export const initialConfigurationState = {};
