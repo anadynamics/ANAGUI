@@ -1,8 +1,8 @@
 {
-  "name": "ANA_gui",
-  "productName": "ANA_gui",
-  "version": "0.10.1",
-  "description": "ANA GUI ",
+  "name": "ANAGUI",
+  "productName": "ANAGUI",
+  "version": "0.11.0",
+  "description": "ANAGUI",
   "main": "./main.prod.js",
   "author": {
     "name": "German Barletta",
