@@ -50,7 +50,7 @@ const electronStore = require('electron-store');
 const eStore = new electronStore();
 import { ipcRenderer } from 'electron';
 
-// type Props = {};
+type Props = {};
 const styles = theme => ({
   root: {
     flexGrow: 1

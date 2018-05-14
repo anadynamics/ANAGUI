@@ -2,6 +2,8 @@
 logs
 *.log
 examples/*
+# binary files and installers
+build
 # Runtime data
 pids
 *.pid
