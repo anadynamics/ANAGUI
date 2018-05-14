@@ -1,11 +1,13 @@
 // @flow
 import React, { Component } from 'react';
 import { Link } from 'react-router-dom';
-import Button from 'material-ui/Button';
-import { withStyles } from 'material-ui/styles';
-import Grid from 'material-ui/Grid';
-import Radio, { RadioGroup } from 'material-ui/Radio';
-import Paper from 'material-ui/Paper';
+import Button from '@material-ui/core/Button';
+import { withStyles } from '@material-ui/core/styles';
+
+import Grid from '@material-ui/core/Grid';
+import Paper from '@material-ui/core/Paper';
+import Radio from '@material-ui/core/Radio';
+import RadioGroup from '@material-ui/core/RadioGroup';
 
 const Promise = require('bluebird');
 const fs = Promise.promisifyAll(require('graceful-fs'));
@@ -13,35 +15,42 @@ const fs = Promise.promisifyAll(require('graceful-fs'));
 const ini = require('ini');
 const path = require('path');
 
-import AppBar from 'material-ui/AppBar';
+import AppBar from '@material-ui/core/AppBar';
 import { Shake } from 'reshake';
-import TextField from 'material-ui/TextField';
-import Toolbar from 'material-ui/Toolbar';
-import Typography from 'material-ui/Typography';
-import Tabs, { Tab } from 'material-ui/Tabs';
+import TextField from '@material-ui/core/TextField';
+import Toolbar from '@material-ui/core/Toolbar';
+import Tabs from '@material-ui/core/Tabs';
+import Tab from '@material-ui/core/Tab';
+import Typography from '@material-ui/core/Typography';
+
 import SwipeableViews from 'react-swipeable-views';
 import { kea, connect } from 'kea';
 import { Control, Form, actions, Field } from 'react-redux-form';
-import { FormControl, FormHelperText, FormLabel } from 'material-ui/Form';
-import Menu, { MenuItem } from 'material-ui/Menu';
-import Select from 'material-ui/Select';
-import Tooltip from 'material-ui/Tooltip';
-import Dialog, {
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  withMobileDialog
-} from 'material-ui/Dialog';
-import Input, { InputLabel } from 'material-ui/Input';
-import Snackbar from 'material-ui/Snackbar';
+import FormHelperText from '@material-ui/core/FormHelperText';
+import FormControl from '@material-ui/core/FormControl';
+import FormLabel from '@material-ui/core/FormLabel';
+import MenuItem from '@material-ui/core/MenuItem';
+import Menu from '@material-ui/core/Menu';
+import Select from '@material-ui/core/Select';
+import Tooltip from '@material-ui/core/Tooltip';
+import DialogContent from '@material-ui/core/DialogContent';
+import DialogContentText from '@material-ui/core/DialogContentText';
+import DialogTitle from '@material-ui/core/DialogTitle';
+import withMobileDialog from '@material-ui/core/withMobileDialog';
+import DialogActions from '@material-ui/core/DialogActions';
+import Dialog from '@material-ui/core/Dialog';
+
+import Input from '@material-ui/core/Input';
+import InputLabel from '@material-ui/core/InputLabel';
+
+import Snackbar from '@material-ui/core/Snackbar';
 
 const electronStore = require('electron-store');
 
 const eStore = new electronStore();
 import { ipcRenderer } from 'electron';
 
-type Props = {};
+// type Props = {};
 const styles = theme => ({
   root: {
     flexGrow: 1

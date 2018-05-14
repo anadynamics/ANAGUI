@@ -1,7 +1,7 @@
 # Logs
 logs
 *.log
-
+examples/*
 # Runtime data
 pids
 *.pid
