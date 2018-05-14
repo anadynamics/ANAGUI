@@ -161,9 +161,7 @@ class Home extends Component<Props> {
       this.handleSnackbarOpen();
     }
   };
-  componentWillReceiveProps = nextProps => {
-    // console.log(nextProps);
-  };
+
   handleSnackbarOpen = () => {
     console.log('Opening Snackbar');
     this.setState({ snackbarOpen: true });
