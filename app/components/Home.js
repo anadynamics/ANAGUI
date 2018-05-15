@@ -8,12 +8,8 @@ import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Radio from '@material-ui/core/Radio';
 import RadioGroup from '@material-ui/core/RadioGroup';
-
-const Promise = require('bluebird');
-const fs = Promise.promisifyAll(require('graceful-fs'));
-// const fs = require('graceful-fs');
-const ini = require('ini');
-const path = require('path');
+import IconButton from '@material-ui/core/IconButton';
+import Zoom from '@material-ui/core/Zoom';
 
 import AppBar from '@material-ui/core/AppBar';
 import { Shake } from 'reshake';
@@ -39,24 +35,43 @@ import DialogTitle from '@material-ui/core/DialogTitle';
 import withMobileDialog from '@material-ui/core/withMobileDialog';
 import DialogActions from '@material-ui/core/DialogActions';
 import Dialog from '@material-ui/core/Dialog';
-
+import List from '@material-ui/core/List';
+import ListItem from '@material-ui/core/ListItem';
+import ListItemAvatar from '@material-ui/core/ListItemAvatar';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
+import ListItemText from '@material-ui/core/ListItemText';
+import FolderIcon from '@material-ui/icons/Folder';
+import DeleteIcon from '@material-ui/icons/Delete';
+import Avatar from '@material-ui/core/Avatar';
 import Input from '@material-ui/core/Input';
 import InputLabel from '@material-ui/core/InputLabel';
 
 import Snackbar from '@material-ui/core/Snackbar';
+import { ipcRenderer } from 'electron';
+
+const Promise = require('bluebird');
+const fs = Promise.promisifyAll(require('graceful-fs'));
+// const fs = require('graceful-fs');
+const ini = require('ini');
+const path = require('path');
 
 const electronStore = require('electron-store');
 
 const eStore = new electronStore();
-import { ipcRenderer } from 'electron';
 
 type Props = {};
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     flexGrow: 1
   },
   input: {
     display: 'none'
+  },
+  fab: {
+    position: 'absolute',
+    top: theme.spacing.unit * 2,
+    right: theme.spacing.unit * 2
   },
   paper: {
     height: 140,
@@ -111,7 +126,7 @@ const steps = [
 const keaOptions = {
   connect: {
     // actions: [keaFormComponent, ["setValue", "submit"]],
-    props: [state => state.configuration, ['* as configurationForm']]
+    props: [(state) => state.configuration, ['* as configurationForm']]
   }
 };
 class Home extends Component<Props> {
@@ -132,12 +147,12 @@ class Home extends Component<Props> {
   componentDidMount = () => {
     this.props.context.addSteps(steps);
     this.checkValidAnaPath();
-    ipcRenderer.on('ana-path', event => {
+    ipcRenderer.on('ana-path', (event) => {
       // store.dispatch({ type: 'OPEN_FILE' });
       console.log('ana Path click');
       this.showFileDialog('configuration.ana_path', ['*'], 'Any File');
     });
-    ipcRenderer.on('clearCache', event => {
+    ipcRenderer.on('clearCache', (event) => {
       // store.dispatch({ type: 'OPEN_FILE' });
       console.log('Clear Cache');
       eStore.clear();
@@ -188,9 +203,13 @@ class Home extends Component<Props> {
     const child = require('child_process').execFile;
     const executablePath = this.props.configurationForm.ana_path;
 
-    let dirname = this.props.configurationForm.pdb_file_upload.match(/(.*)[\/\\]/)[1]||'';
-    let pdbFilename = this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
-    let outputFilename= dirname+ '/'+pdbFilename+'.txt';
+    const pdbDirname = this.props.configurationForm.pdb_file_upload.match(/(.*)[\/\\]/)[1] || '';
+    const pdbFilename = this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
+    const dynamicFilename = this.props.configurationForm.dynamic_file_upload;
+    const outputFilename = this.props.configurationForm.output_file;
+    const nddOutputFilename = this.props.configurationForm.ndd_output_file;
+    const nddInputFilename = this.props.configurationForm.ndd_input_file_upload;
+    // const outputFilename = `${dirname}/${pdbFilename}.txt`;
     const processExecResults = (err, stdout, stderr) => {
       console.log(err);
       console.log(stdout.toString());
@@ -200,27 +219,32 @@ class Home extends Component<Props> {
     };
     const parameters = [
       this.props.configurationForm.pdb_file_upload,
-      `-c ${this.props.configurationForm.config_file_upload }`
+      `-c ${this.props.configurationForm.config_file_upload}`
     ];
 
-    //FIRST SAVE THE CURRENT CONFIG
+    // FIRST SAVE THE CURRENT CONFIG
     this.saveConfigToFile();
     if (this.state.currentTab == 0) {
       // Static
-      parameters.push(' -o ' + outputFilename);
+      parameters.push(` -o ${outputFilename} `);
     } else if (this.state.currentTab == 1) {
+        parameters.push(` -o ${outputFilename} `);
+        parameters.push(` -d ${dynamicFilename} `);
       // MD
     } else if (this.state.currentTab == 1) {
-      // MD
+      // MD --NDD_input=in_ndd_1M14_A --NDD_output=out_ndd
+      parameters.push(` --NDD_output=${nddOutputFilename} `);
+      parameters.push(` --NDD_input=${nddInputFilename} `);
     } else {
       console.error("Current TAB not defined, I don't know what to run");
       return false;
     }
 
-    child(executablePath, parameters, {'cwd': dirname, 'shell':true}, (err, data) => {
+    child(executablePath, parameters, { cwd: pdbDirname, shell: true }, (err, data) => {
       processExecResults(err, data);
     });
   };
+
   showFileDialog = (modelName, extensions, extensionsTitle) => {
     const { dialog } = require('electron').remote;
     const filters = [{ name: extensionsTitle, extensions }];
@@ -240,11 +264,28 @@ class Home extends Component<Props> {
       }
     }
   };
+  showSaveFileDialog = (modelName) => {
+    const { dialog } = require('electron').remote;
+    const value = dialog.showOpenDialog((fileName)=>{
+        if (fileName === undefined){
+        console.log("You didn't save the file");
+        return;
+    }
+        // fileName is a string that contains the path and filename created in the save file dialog.
+        if (fileName[0] != undefined) {
+          eStore.set(modelName, fileName[0]);
+          this.checkValidAnaPath(); // TODO: only call this method once
+          this.props.dispatch(actions.change(modelName, fileName[0]));
+
+        }
+    });
+
+  };
   saveConfigToFile = () => {
-      var configurationFormClone = Object.assign({}, this.props.configurationForm);
-      delete configurationFormClone.config_file_upload;
-      delete configurationFormClone.ana_path;
-      delete configurationFormClone.pdb_file_upload;
+    const configurationFormClone = Object.assign({}, this.props.configurationForm);
+    delete configurationFormClone.config_file_upload;
+    delete configurationFormClone.ana_path;
+    delete configurationFormClone.pdb_file_upload;
     fs.writeFileSync(
       `${this.props.configurationForm.pdb_file_upload}.cfg`,
       ini.stringify(configurationFormClone)
@@ -269,7 +310,7 @@ class Home extends Component<Props> {
     console.log('appPath: documents 3', documentsPath);
 
     documentsPath = path.join(documentsPath, '/config.ini');
-    fs.writeFile(documentsPath, '', { flag: 'wx' }, err => {
+    fs.writeFile(documentsPath, '', { flag: 'wx' }, (err) => {
       if (err) {
         const config = ini.parse(fs.readFileSync(documentsPath, 'utf-8'));
         console.log("It's saved!", config);
@@ -286,15 +327,35 @@ class Home extends Component<Props> {
   };
 
   render() {
+    const { classes, fullScreen, theme } = this.props;
+    const transitionDuration = {
+      enter: theme.transitions.duration.enteringScreen,
+      exit: theme.transitions.duration.leavingScreen
+    };
     const pdbFilename =
       this.props.configurationForm.pdb_file_upload == undefined
         ? ''
-        : this.props.configurationForm.pdb_file_upload; // Add this function to show only the file name  .replace(/^.*[\\\/]/, '');
+        : this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, ''); // Add this function to show only the file name  .replace(/^.*[\\\/]/, '');
     const configFilename =
       this.props.configurationForm.config_file_upload == undefined
         ? ''
-        : this.props.configurationForm.config_file_upload;
-    const { classes, fullScreen } = this.props;
+        : this.props.configurationForm.config_file_upload.replace(/^.*[\\\/]/, '');
+    const dynamicFileName =
+      this.props.configurationForm.dynamic_file_upload == undefined
+        ? ''
+        : this.props.configurationForm.dynamic_file_upload.replace(/^.*[\\\/]/, '');
+    const nddOutputFile =
+      this.props.configurationForm.ndd_output_file == undefined
+        ? ''
+        : this.props.configurationForm.ndd_output_file.replace(/^.*[\\\/]/, '');
+    const nddInputFile =
+      this.props.configurationForm.ndd_input_file_upload == undefined
+        ? ''
+        : this.props.configurationForm.ndd_input_file_upload.replace(/^.*[\\\/]/, '');
+    const outputFilename =
+      this.props.configurationForm.output_file == undefined
+        ? ''
+        : this.props.configurationForm.output_file.replace(/^.*[\\\/]/, '');
     return (
       <Grid container className={classes.root}>
         <Grid item>
@@ -322,258 +383,289 @@ class Home extends Component<Props> {
           </Grid>
         </Grid>
         <Grid item xs={12}>
+          <Tabs
+            value={this.state.currentTab}
+            onChange={this.handleTabChange}
+            indicatorColor="primary"
+            textColor="primary"
+            centered
+          >
+            <Tab label="Static " />
+            <Tab label="Molecular Dynamics" />
+            <Tab label="Non-Delauny Dynamics" />
+          </Tabs>
+        </Grid>
+        <Grid item xs={12}>
           <Grid container alignItems="baseline">
             <Grid item xs={12}>
               <Paper className={classes.control}>
                 <Grid container alignItems="baseline">
-                  <Grid item xs={3}>
-                    <Button
-                      color="default"
-                      variant={
-                        this.props.configurationForm.pdb_file_upload == undefined
-                          ? 'raised'
-                          : 'flat'
-                      }
-                      id="raised-button-file"
-                      component="span"
-                      onClick={() =>
-                        this.showFileDialog('configuration.pdb_file_upload', ['pdb'], 'PDB Files')
-                      }
-                      className={classes.button}
-                    >
-                      {this.props.configurationForm.pdb_file_upload == undefined ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          <i className="material-icons" style={{ paddingRight: 10 }}>
-                            file_upload
-                          </i>Load PDB
-                        </div>
-                      ) : (
-                        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          <i className="material-icons" style={{ paddingRight: 10 }}>
-                            file_upload
-                          </i>
-                          <span>Load PDB</span>
-                          <i
-                            className="material-icons"
-                            style={{ color: '#52a647', paddingLeft: 10 }}
+                  <Grid item xs="4">
+                    <List dense>
+                      <ListItem>
+                        <ListItemAvatar>
+                          <Button
+                            color="default"
+                            variant="flat"
+                            id="raised-button-file"
+                            component="span"
+                            onClick={() =>
+                              this.showFileDialog(
+                                'configuration.pdb_file_upload',
+                                ['pdb'],
+                                'PDB Files'
+                              )
+                            }
                           >
-                            check
-                          </i>
-                        </div>
-                      )}
-                    </Button>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <Button
-                      color="default"
-                      variant="flat"
-                      id="raised-button-file"
-                      component="span"
-                      onClick={() =>
-                        this.showFileDialog(
-                          'configuration.config_file_upload',
-                          ['cfg'],
-                          'Config File'
-                        )
-                      }
-                      className={classes.button}
-                    >
-                      {this.props.configurationForm.config_file_upload == undefined ? (
-                        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          <i className="material-icons" style={{ paddingRight: 10 }}>
-                            file_upload
-                          </i>Load Config
-                        </div>
-                      ) : (
-                        <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                          <i className="material-icons" style={{ paddingRight: 10 }}>
-                            file_upload
-                          </i>
-                          <span>Load Config</span>
-                          <i
-                            className="material-icons"
-                            style={{ color: '#52a647', paddingLeft: 10 }}
+                            {this.props.configurationForm.pdb_file_upload == undefined ? (
+                              <div
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'left',
+                                  color: 'rgb(249, 81, 81)'
+                                }}
+                              >
+                                <i className="material-icons">file_upload</i>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                <i className="material-icons">file_upload</i>
+                              </div>
+                            )}
+                          </Button>
+                        </ListItemAvatar>
+                        {this.props.configurationForm.pdb_file_upload == undefined ? (
+                          <ListItemText primary="Load PDB" secondary={pdbFilename || null} />
+                        ) : (
+                            <ListItemText primary="PDB Loaded" secondary={pdbFilename || null} />
+                        )}
+                        <ListItemSecondaryAction>
+                          {this.props.configurationForm.pdb_file_upload == undefined ? null : (
+                            <i className="material-icons" style={{ color: '#52a647' }}>
+                              check
+                            </i>
+                          )}
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                      <ListItem>
+                        <ListItemAvatar>
+                          <Button
+                            color="default"
+                            variant="flat"
+                            component="span"
+                            onClick={() =>
+                              this.showFileDialog(
+                                'configuration.config_file_upload',
+                                ['cfg'],
+                                'Config File'
+                              )
+                            }
+                            className={classes.button}
                           >
-                            check
-                          </i>
-                        </div>
-                      )}
-                    </Button>
+                            {this.props.configurationForm.config_file_upload == undefined ? (
+                              <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                <i className="material-icons">file_upload</i>
+                              </div>
+                            ) : (
+                              <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                <i className="material-icons">file_upload</i>
+                              </div>
+                            )}
+                          </Button>
+                        </ListItemAvatar>
+                        {this.props.configurationForm.config_file_upload == undefined ? (
+                          <ListItemText primary="Load Config" secondary={configFilename || null} />
+                        ) : (
+                            <ListItemText primary="Config Loaded" secondary={configFilename || null} />
+                        )}
+                        <ListItemSecondaryAction>
+                          {this.props.configurationForm.config_file_upload == undefined ? null : (
+                            <i
+                              className="material-icons"
+                              style={{ color: '#52a647', paddingLeft: 10 }}
+                            >
+                              check
+                            </i>
+                          )}
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                      <ListItem>
+                        <ListItemAvatar>
+                            <Button
+                              color="default"
+                              variant="flat"
+                              component="span"
+                              onClick={() =>
+                                this.showSaveFileDialog('configuration.output_file')
+                              }
+                              className={classes.button}
+                            >
+                                {this.props.configurationForm.output_file == undefined ? (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons">save</i>
+                                  </div>
+                                ) : (
+                                    <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                      <i className="material-icons" >
+                                        save
+                                      </i>
+                                    </div>
+                                )}
+                            </Button>
+                        </ListItemAvatar>
+                        {this.props.configurationForm.output_file == undefined ? (
+                          <ListItemText primary="Output File" secondary={nddOutputFile || null} />
+                        ) : (
+                          <ListItemText primary="Output Defined" secondary={nddOutputFile || null} />
+                        )}
+
+                        <ListItemSecondaryAction>
+                          {this.props.configurationForm.output_file == undefined ? null : (
+                            <i
+                              className="material-icons"
+                              style={{ color: '#52a647', paddingLeft: 10 }}
+                            >
+                              check
+                            </i>
+                          )}
+                        </ListItemSecondaryAction>
+                      </ListItem>
+                    </List>
                   </Grid>
                   {this.state.currentTab == 1 ? (
-                    <Grid item xs={3}>
-                      <Button
-                        color="default"
-                        variant="flat"
-                        id="raised-button-file"
-                        component="span"
-                        onClick={() =>
-                          this.showFileDialog(
-                            'configuration.dynamic_file_upload',
-                            ['nc', 'trr', 'trj', 'xtc'],
-                            'Dynamic File'
-                          )
-                        }
-                        className={classes.button}
-                      >
-                        {this.props.configurationForm.dynamic_file_upload == undefined ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              file_upload
-                            </i>Load Dynamic
-                          </div>
-                        ) : (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              file_upload
-                            </i>
-                            <span>Load Dynamic</span>
-                            <i
-                              className="material-icons"
-                              style={{ color: '#52a647', paddingLeft: 10 }}
-                            >
-                              check
-                            </i>
-                          </div>
-                        )}
-                      </Button>
-                    </Grid>
-                  ) : (
-                    ''
-                  )}
-                  {this.state.currentTab == 2 ? (
-                    <Grid item xs={2}>
-                      <Button
-                        color="default"
-                        variant="flat"
-                        id="raised-button-file"
-                        component="span"
-                        onClick={() =>
-                          this.showFileDialog(
-                            'configuration.ndd_input_file_upload',
-                            ['*'],
-                            'Any File'
-                          )
-                        }
-                        className={classes.button}
-                      >
-                        {this.props.configurationForm.ndd_input_file_upload == undefined ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              file_upload
-                            </i>NDD Input
-                          </div>
-                        ) : (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              file_upload
-                            </i>
-                            <span>NDD Input</span>
-                            <i
-                              className="material-icons"
-                              style={{ color: '#52a647', paddingLeft: 10 }}
-                            >
-                              check
-                            </i>
-                          </div>
-                        )}
-                      </Button>
-                    </Grid>
-                  ) : (
-                    ''
-                  )}
-                  {this.state.currentTab == 2 ? (
-                    <Grid item xs={2}>
-                      <Button
-                        color="default"
-                        variant="flat"
-                        id="raised-button-file"
-                        component="span"
-                        onClick={() =>
-                          this.showFileDialog('configuration.ndd_output_file', ['*'], 'Any File')
-                        }
-                        className={classes.button}
-                      >
-                        {this.props.configurationForm.ndd_output_file == undefined ? (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              save
-                            </i>NDD Output
-                          </div>
-                        ) : (
-                          <div style={{ display: 'inline-flex', alignItems: 'center' }}>
-                            <i className="material-icons" style={{ paddingRight: 10 }}>
-                              save
-                            </i>
-                            <span>NDD Output</span>
-                            <i
-                              className="material-icons"
-                              style={{ color: '#52a647', paddingLeft: 10 }}
-                            >
-                              check
-                            </i>
-                          </div>
-                        )}
-                      </Button>
-                    </Grid>
-                  ) : (
-                    ''
-                  )}
-                  <Grid
-                    item
-                    xs={this.state.currentTab == 2 ? 2 : this.state.currentTab == 1 ? 2 : 6}
-                  >
-                    <Grid container justify="flex-end">
-                      <Button
-                        variant="raised"
-                        color={
-                          this.props.configurationForm.ana_path == undefined
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        id="raised-button-file"
-                        component="span"
-                        onClick={() => this.executeANA()}
-                        className={classes.button}
-                      >
-                        Run ANA
-                        <i className="material-icons" style={{ fontSize: 30, paddingLeft: 10 }}>
-                          play_circle_outline
-                        </i>
-                      </Button>
-                    </Grid>
+                  <Grid item xs="4">
+                      <List dense>
+                        <ListItem>
+                          <ListItemAvatar>
+                              <Button
+                                color="default"
+                                variant="flat"
+                                component="span"
+                                onClick={() =>
+                                  this.showFileDialog(
+                                    'configuration.dynamic_file_upload',
+                                    ['nc', 'trr', 'trj', 'xtc'],
+                                    'Dynamic File'
+                                  )
+                                }
+                                className={classes.button}
+                              >
+                                {this.props.configurationForm.dynamic_file_upload == undefined ? (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons">
+                                      file_upload
+                                    </i>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons" >
+                                      file_upload
+                                    </i>
+                                  </div>
+                                )}
+                              </Button>
+                          </ListItemAvatar>
+                          {this.props.configurationForm.dynamic_file_upload == undefined ? (
+                            <ListItemText primary="Load Dynamic" secondary={dynamicFileName || null} />
+                          ) : (
+                            <ListItemText primary="Dynamic Loaded" secondary={dynamicFileName || null} />
+                          )}
+
+                          <ListItemSecondaryAction>
+                            {this.props.configurationForm.dynamic_file_upload == undefined ? null : (
+                              <i className="material-icons" style={{ color: '#52a647' }}>
+                                check
+                              </i>
+                            )}
+                          </ListItemSecondaryAction>
+                        </ListItem>
+
+                      </List>
                   </Grid>
+              ) : (
+                  ''
+              )}
+              {this.state.currentTab == 2 ? (
+                  <Grid item xs="4">
+                      <List dense>
+                        <ListItem>
+                          <ListItemAvatar>
+                                <Button
+                                  color="default"
+                                  variant="flat"
+                                  id="raised-button-file"
+                                  component="span"
+                                  onClick={() =>
+                                    this.showFileDialog('configuration.ndd_output_file', ['*'], 'Any File')
+                                  }
+                                  className={classes.button}
+                                >
+                                  {this.props.configurationForm.ndd_output_file == undefined ? (
+                                    <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                      <i className="material-icons">save</i>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                      <i className="material-icons">save</i>
+                                    </div>
+                                  )}
+                                </Button>
+                          </ListItemAvatar>
+                          <ListItemText primary="NDD Output" secondary={nddOutputFile || null} />
+                          <ListItemSecondaryAction>
+                            {this.props.configurationForm.ndd_output_file == undefined ? null : (
+                              <i className="material-icons" style={{ color: '#52a647' }}>
+                                check
+                              </i>
+                            )}
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                        <ListItem>
+                          <ListItemAvatar>
+                              <Button
+                                color="default"
+                                variant="flat"
+                                id="raised-button-file"
+                                component="span"
+                                onClick={() =>
+                                  this.showFileDialog(
+                                    'configuration.ndd_input_file_upload',
+                                    ['*'],
+                                    'Any File'
+                                  )
+                                }
+                                className={classes.button}
+                              >
+                                {this.props.configurationForm.ndd_input_file_upload == undefined ? (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons">file_upload</i>
+                                  </div>
+                                ) : (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons">file_upload</i>
+                                  </div>
+                                )}
+                              </Button>
+                          </ListItemAvatar>
+                          <ListItemText primary="NDD Input" secondary={configFilename || null} />
+                          <ListItemSecondaryAction>
+                            {this.props.configurationForm.config_file_upload == undefined ? null : (
+                              <i
+                                className="material-icons"
+                                style={{ color: '#52a647', paddingLeft: 10 }}
+                              >
+                                check
+                              </i>
+                            )}
+                          </ListItemSecondaryAction>
+                        </ListItem>
+                      </List>
+                  </Grid>
+              ) : (
+                  ''
+              )}
                 </Grid>
               </Paper>
-              <Paper className={classes.control}>
-                <Grid item>
-                  {pdbFilename ? (
-                    <FormLabel style={{ color: '#87959a' }}> PDB File: {pdbFilename}</FormLabel>
-                  ) : (
-                    ''
-                  )}
-                </Grid>
-                <Grid item>
-                  {configFilename ? (
-                    <FormLabel style={{ color: '#87959a' }}> Config: {configFilename}</FormLabel>
-                  ) : (
-                    ''
-                  )}
-                </Grid>
-              </Paper>
-            </Grid>
-            <Grid item xs={12}>
-              <Tabs
-                value={this.state.currentTab}
-                onChange={this.handleTabChange}
-                indicatorColor="primary"
-                textColor="primary"
-                centered
-              >
-                <Tab label="Static " />
-                <Tab label="Molecular Dynamics" />
-                <Tab label="Non-Delauny Dynamics" />
-              </Tabs>
             </Grid>
           </Grid>
           <SwipeableViews
@@ -936,6 +1028,30 @@ class Home extends Component<Props> {
             </TabContainer>
           </SwipeableViews>
         </Grid>
+        <Zoom
+          key={1}
+          in
+          timeout={200}
+          style={{
+            transitionDelay: true ? transitionDuration.exit : 0
+          }}
+          unmountOnExit
+        >
+          <Tooltip title="RUN ANA">
+            <Button
+              variant="fab"
+              color={this.props.configurationForm.ana_path == undefined ? 'default' : 'secondary'}
+              id="raised-button-file"
+              component="span"
+              onClick={() => this.executeANA()}
+              className={classes.fab}
+            >
+              <i className="material-icons" style={{ fontSize: 30, paddingLeft: 0 }}>
+                play_circle_outline
+              </i>
+            </Button>
+          </Tooltip>
+        </Zoom>
         <Dialog
           fullScreen={fullScreen}
           open={this.state.dialogOpen}
@@ -944,14 +1060,22 @@ class Home extends Component<Props> {
         >
           <DialogTitle id="responsive-dialog-title">Execution Results</DialogTitle>
           <DialogContent>
-              <DialogContentText>
-                 <Typography variant="body2" gutterBottom style={{ 'fontFamily': 'monospace', 'fontSize': '13px'  }}>
-                     {this.state.ana_execute_results}
-                 </Typography>
-                 <Typography variant="body2" gutterBottom style={{ 'fontStyle': 'italic', 'fontSize': '11px', 'marginTop': '30px'  }}>
-                     ANA output was written to: {pdbFilename}.txt
-                 </Typography>
-              </DialogContentText>
+            <DialogContentText>
+              <Typography
+                variant="body2"
+                gutterBottom
+                style={{ fontFamily: 'monospace', fontSize: '13px' }}
+              >
+                {this.state.ana_execute_results}
+              </Typography>
+              <Typography
+                variant="body2"
+                gutterBottom
+                style={{ fontStyle: 'italic', fontSize: '11px', marginTop: '30px' }}
+              >
+                ANA output was written to: {outputFilename}.txt
+              </Typography>
+            </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={this.handleDialogClose} color="primary">
@@ -974,7 +1098,7 @@ const SelectComponent = ({
       autoWidth
       component={Select}
       mapProps={{
-        value: props => {
+        value: (props) => {
           if (props.modelValue == undefined) {
             return 'none';
           }
@@ -1076,4 +1200,4 @@ const ASA_only_sideOptions = [
     text: 'Axes'
   }
 ];
-export default kea(keaOptions)(withStyles(styles)(Home));
+export default kea(keaOptions)(withStyles(styles, { withTheme: true })(Home));
