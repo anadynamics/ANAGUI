@@ -1073,7 +1073,7 @@ class Home extends Component<Props> {
                 gutterBottom
                 style={{ fontStyle: 'italic', fontSize: '11px', marginTop: '30px' }}
               >
-                ANA output was written to: {outputFilename}.txt
+                ANA output was written to: {outputFilename}.pdb
               </Typography>
             </DialogContentText>
           </DialogContent>
