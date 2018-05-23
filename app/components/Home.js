@@ -207,6 +207,7 @@ class Home extends Component<Props> {
     const pdbFilename = this.props.configurationForm.pdb_file_upload.replace(/^.*[\\\/]/, '');
     const dynamicFilename = this.props.configurationForm.dynamic_file_upload;
     const outputFilename = this.props.configurationForm.output_file;
+    const outputVolumeFilename = this.props.configurationForm.output_volume_file;
     const nddOutputFilename = this.props.configurationForm.ndd_output_file;
     const nddInputFilename = this.props.configurationForm.ndd_input_file_upload;
     // const outputFilename = `${dirname}/${pdbFilename}.txt`;
@@ -227,16 +228,17 @@ class Home extends Component<Props> {
     if (this.state.currentTab == 0) {
       // Static
       parameters.push(` -o ${outputFilename} `);
+      parameters.push(` -v ${outputVolumeFilename} `);
     } else if (this.state.currentTab == 1) {
         parameters.push(` -o ${outputFilename} `);
         parameters.push(` -d ${dynamicFilename} `);
       // MD
-    } else if (this.state.currentTab == 1) {
+  } else if (this.state.currentTab == 2) {
       // MD --NDD_input=in_ndd_1M14_A --NDD_output=out_ndd
       parameters.push(` --NDD_output=${nddOutputFilename} `);
       parameters.push(` --NDD_input=${nddInputFilename} `);
     } else {
-      console.error("Current TAB not defined, I don't know what to run");
+      console.error("Current TAB not defined, I don't know what to do");
       return false;
     }
 
@@ -356,6 +358,10 @@ class Home extends Component<Props> {
       this.props.configurationForm.output_file == undefined
         ? ''
         : this.props.configurationForm.output_file.replace(/^.*[\\\/]/, '');
+    const volumeOutputFile =
+      this.props.configurationForm.output_volume_file == undefined
+        ? ''
+        : this.props.configurationForm.output_volume_file.replace(/^.*[\\\/]/, '');
     return (
       <Grid container className={classes.root}>
         <Grid item>
@@ -400,7 +406,7 @@ class Home extends Component<Props> {
             <Grid item xs={12}>
               <Paper className={classes.control}>
                 <Grid container alignItems="baseline">
-                  <Grid item xs="4">
+                  <Grid item xs={4}>
                     <List dense>
                       <ListItem>
                         <ListItemAvatar>
@@ -489,6 +495,12 @@ class Home extends Component<Props> {
                           )}
                         </ListItemSecondaryAction>
                       </ListItem>
+
+                    </List>
+                  </Grid>
+                  <Grid item xs={4}>
+                    <List dense>
+
                       <ListItem>
                         <ListItemAvatar>
                             <Button
@@ -514,9 +526,9 @@ class Home extends Component<Props> {
                             </Button>
                         </ListItemAvatar>
                         {this.props.configurationForm.output_file == undefined ? (
-                          <ListItemText primary="Output File" secondary={nddOutputFile || null} />
+                          <ListItemText primary="Output File"   />
                         ) : (
-                          <ListItemText primary="Output Defined" secondary={nddOutputFile || null} />
+                          <ListItemText primary="Output Defined" secondary={outputFilename || null} />
                         )}
 
                         <ListItemSecondaryAction>
@@ -530,10 +542,51 @@ class Home extends Component<Props> {
                           )}
                         </ListItemSecondaryAction>
                       </ListItem>
+                      <ListItem>
+                        <ListItemAvatar>
+                            <Button
+                              color="default"
+                              variant="flat"
+                              component="span"
+                              onClick={() =>
+                                this.showSaveFileDialog('configuration.output_volume_file')
+                              }
+                              className={classes.button}
+                            >
+                                {this.props.configurationForm.output_volume_file == undefined ? (
+                                  <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                    <i className="material-icons">save</i>
+                                  </div>
+                                ) : (
+                                    <div style={{ display: 'inline-flex', alignItems: 'left' }}>
+                                      <i className="material-icons" >
+                                        save
+                                      </i>
+                                    </div>
+                                )}
+                            </Button>
+                        </ListItemAvatar>
+                        {this.props.configurationForm.output_volume_file == undefined ? (
+                          <ListItemText primary="Output Volume File"  />
+                        ) : (
+                          <ListItemText primary="Output Volume Defined" secondary={volumeOutputFile || null} />
+                        )}
+
+                        <ListItemSecondaryAction>
+                          {this.props.configurationForm.output_volume_file == undefined ? null : (
+                            <i
+                              className="material-icons"
+                              style={{ color: '#52a647', paddingLeft: 10 }}
+                            >
+                              check
+                            </i>
+                          )}
+                        </ListItemSecondaryAction>
+                      </ListItem>
                     </List>
                   </Grid>
                   {this.state.currentTab == 1 ? (
-                  <Grid item xs="4">
+                  <Grid item xs={3}>
                       <List dense>
                         <ListItem>
                           <ListItemAvatar>
@@ -586,7 +639,7 @@ class Home extends Component<Props> {
                   ''
               )}
               {this.state.currentTab == 2 ? (
-                  <Grid item xs="4">
+                  <Grid item xs={3}>
                       <List dense>
                         <ListItem>
                           <ListItemAvatar>
