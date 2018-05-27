@@ -526,9 +526,9 @@ class Home extends Component<Props> {
                             </Button>
                         </ListItemAvatar>
                         {this.props.configurationForm.output_file == undefined ? (
-                          <ListItemText primary="Output File"   />
+                          <ListItemText primary="Output Cavity"   />
                         ) : (
-                          <ListItemText primary="Output Defined" secondary={outputFilename || null} />
+                          <ListItemText primary="Output Cavity Defined" secondary={outputFilename || null} />
                         )}
 
                         <ListItemSecondaryAction>
@@ -567,7 +567,7 @@ class Home extends Component<Props> {
                             </Button>
                         </ListItemAvatar>
                         {this.props.configurationForm.output_volume_file == undefined ? (
-                          <ListItemText primary="Output Volume File"  />
+                          <ListItemText primary="Output Volume"  />
                         ) : (
                           <ListItemText primary="Output Volume Defined" secondary={volumeOutputFile || null} />
                         )}
@@ -619,9 +619,9 @@ class Home extends Component<Props> {
                               </Button>
                           </ListItemAvatar>
                           {this.props.configurationForm.dynamic_file_upload == undefined ? (
-                            <ListItemText primary="Load Dynamic" secondary={dynamicFileName || null} />
+                            <ListItemText primary="Load Trajectory" secondary={dynamicFileName || null} />
                           ) : (
-                            <ListItemText primary="Dynamic Loaded" secondary={dynamicFileName || null} />
+                            <ListItemText primary="Trajectory Loaded" secondary={dynamicFileName || null} />
                           )}
 
                           <ListItemSecondaryAction>
