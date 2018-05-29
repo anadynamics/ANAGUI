@@ -1,0 +1,4 @@
+export CSC_IDENTITY_AUTO_DISCOVERY=false
+npm i --save @material-ui/codemod
+npm run package -m  -c.mac.identity=null
+npm install
