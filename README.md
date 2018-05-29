@@ -1,4 +1,4 @@
-# Ana GUI
+# ANAGUI
 This project is based on  [electron-react-boilerplate](https://github.com/chentsulin/electron-react-boilerplate) so you will find most of the development information right in that repo.
 
 ## Install

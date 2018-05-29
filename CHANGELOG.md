@@ -30,7 +30,7 @@
 #### Additions
 - Enable node_modules cache on CI
 
-# 0.11.2 (2017.5.1)
+# 0.11.2 (2017.5.11
 
 Yay! Another patch release. This release mostly includes refactorings and router bug fixes. Huge thanks to @anthonyraymond!
 
